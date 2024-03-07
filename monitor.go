@@ -4,7 +4,7 @@ package monitor
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"sync"
 )
 
@@ -51,7 +51,7 @@ func (m *Monitor) Watch(ctx context.Context, name string, srv Service) {
 	m.cnt++
 	go func() {
 		<-srv.Done()
-		log.Printf("%s exited", name)
+		slog.Warn("service exited", "service: ", name)
 		m.mu.Lock()
 		defer m.mu.Unlock()
 		m.cancel()
