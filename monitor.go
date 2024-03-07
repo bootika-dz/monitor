@@ -27,10 +27,12 @@ type Monitor struct {
 // so they could be cancelled by the monitor.
 func New(ctx context.Context) (*Monitor, context.Context) {
 	ctx, cancel := context.WithCancel(ctx)
-	return &Monitor{
+	m := &Monitor{
 		cancel: cancel,
 		done:   make(chan struct{}),
-	}, ctx
+	}
+	go m.close(ctx)
+	return m, ctx
 }
 
 // Done returns a channel that is closed when all the services have exited
@@ -71,4 +73,15 @@ func (m *Monitor) Cancel() {
 		m.closed = true
 	}
 	m.cancel()
+}
+
+func (m *Monitor) close(ctx context.Context) {
+	<-ctx.Done()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	// if there are no services being monitored, mark monitor as closed
+	if m.cnt == 0 && !m.closed {
+		close(m.done)
+		m.closed = true
+	}
 }
